@@ -82,27 +82,28 @@ impl Blockchain {
 
     pub fn mine_block_by_stake(&mut self) -> Option<Block> {
         if self.mempool.transactions.len() < 2 {
-            // info!("Skip mining because no transaction in mempool");
             return None;
         }
-
-        let balance = self
-            .stakes
-            .get_balance(&self.wallet.get_public_key())
-            .clone();
-
+    
+        let stakes = &mut self.stakes.clone();
+      
+    
         let difficulty = self.get_difficulty();
         info!("Mining new block with difficulty {}", difficulty);
-
+    
         let timestamp = Utc::now().timestamp();
         let previous_hash = self.chain.last().unwrap().hash.clone();
         let address = self.wallet.get_public_key();
-
-        if Blockchain::is_staking_valid(balance, difficulty, timestamp, &previous_hash, &address) {
-            Some(self.create_block(timestamp))
-        } else {
-            None
+    
+        for account in &stakes.accounts {
+            let balance = self.stakes.get_balance(account).clone();
+    
+            if Blockchain::is_staking_valid(balance, difficulty, timestamp, &previous_hash, &address) {
+                return Some(self.create_block(timestamp));
+            }
         }
+    
+        None
     }
 
     pub fn is_staking_valid(
