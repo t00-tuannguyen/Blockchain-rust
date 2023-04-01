@@ -12,7 +12,7 @@ pub struct Block {
     pub timestamp: i64,
     pub txn: Vec<Transaction>,
     pub validator: String,
-    pub signature: String,
+    //pub signature: String,
     pub difficulty: u32,
 }
 
@@ -29,9 +29,10 @@ impl Block {
         timestamp: i64,
         txn: Vec<Transaction>,
         difficulty: u32,
-        mut validator_wallet: Wallet,
+       // mut validator_wallet: Wallet,
+       validator:String,
     ) -> Self {
-        let validator = validator_wallet.get_public_key();
+        //let validator = validator_wallet.get_public_key();
         let hash = block::calculate_hash(
             &id,
             &timestamp,
@@ -40,7 +41,7 @@ impl Block {
             &validator,
             &difficulty,
         );
-        let signature = validator_wallet.sign(&hash);
+        //let signature = validator_wallet.sign(&hash);
         Self {
             id,
             hash,
@@ -48,7 +49,7 @@ impl Block {
             timestamp,
             txn,
             validator,
-            signature,
+           // signature,
             difficulty,
         }
     }
@@ -78,24 +79,24 @@ impl Block {
             timestamp,
             txn,
             validator,
-            signature,
+            //signature,
             difficulty,
         }
     }
 
-    pub fn verify_block_signature(block: &Block) -> bool {
-        info!("verifying block...");
-        let hash = block::calculate_hash(
-            &block.id,
-            &block.timestamp,
-            &block.previous_hash,
-            &block.txn,
-            &block.validator,
-            &block.difficulty,
-        );
+    // pub fn verify_block_signature(block: &Block) -> bool {
+    //     info!("verifying block...");
+    //     let hash = block::calculate_hash(
+    //         &block.id,
+    //         &block.timestamp,
+    //         &block.previous_hash,
+    //         &block.txn,
+    //         &block.validator,
+    //         &block.difficulty,
+    //     );
 
-        Util::verify_signature(&block.validator, &hash, &block.signature).is_ok()
-    }
+       // Util::verify_signature(&block.validator, &hash, &block.signature).is_ok()
+    //}
 }
 
 pub fn calculate_hash(

@@ -93,13 +93,13 @@ impl Blockchain {
     
         let timestamp = Utc::now().timestamp();
         let previous_hash = self.chain.last().unwrap().hash.clone();
-        let address = self.wallet.get_public_key();
+        //let address = self.wallet.get_public_key();
     
         for account in &stakes.accounts {
             let balance = self.stakes.get_balance(account).clone();
-    
+            let address = account;
             if Blockchain::is_staking_valid(balance, difficulty, timestamp, &previous_hash, &address) {
-                return Some(self.create_block(timestamp));
+                return Some(self.create_block(timestamp,account));
             }
         }
     
@@ -124,7 +124,7 @@ impl Blockchain {
         decimal_staking_hash <= big_balance_diff
     }
 
-    pub fn create_block(&mut self, timestamp: i64) -> Block {
+    pub fn create_block(&mut self, timestamp: i64,address: &String) -> Block {
         info!("Creating new block...");
 
         Block::new(
@@ -133,7 +133,7 @@ impl Blockchain {
             timestamp,
             self.mempool.transactions.clone(),
             self.get_difficulty(),
-            self.wallet.clone(),
+            address,
         )
     }
 
@@ -163,12 +163,6 @@ impl Blockchain {
             warn!(
                 "block with id: {} is not the next block after the latest: {}",
                 block.id, prev_block.id
-            );
-            return false;
-        } else if !Block::verify_block_signature(&block) {
-            warn!(
-                "block with id: {} has invalid validator signature",
-                block.id
             );
             return false;
         } else if !Blockchain::is_staking_valid(
