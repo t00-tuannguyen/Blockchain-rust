@@ -133,7 +133,7 @@ impl Blockchain {
             timestamp,
             self.mempool.transactions.clone(),
             self.get_difficulty(),
-            address,
+            address.to_string(),
         )
     }
 
