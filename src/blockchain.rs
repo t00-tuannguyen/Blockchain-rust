@@ -11,6 +11,7 @@ use crate::validator::Validator;
 use crate::wallet::Wallet;
 use num_bigint::BigUint;
 use sha256::digest;
+use std::time::Duration;
 
 const BLOCK_GENERATION_INTERVAL_SECONDS: usize = 30;
 const DIFFICULTY_ADJUSTMENT_INTERVAL_BLOCKS: usize = 2;
@@ -79,8 +80,45 @@ impl Blockchain {
             last_block.difficulty
         }
     }
-
     pub fn mine_block_by_stake(&mut self) -> Option<Block> {
+    let difficulty = self.get_difficulty();
+    //info!("Mining new block with difficulty {}", difficulty);
+
+    let mut timestamp = Utc::now().timestamp();
+    let previous_hash = self.chain.last().unwrap().hash.clone();
+    let stakes = &mut self.stakes.clone();
+    let mut transactions: Vec<Transaction> = Vec::new();
+
+    loop {
+        let length = self.mempool.transactions.len();
+
+        if length > 0 && length < 10 {
+            transactions = self.mempool.transactions.clone();
+            // Wait for 30 seconds before checking mempool length again
+            std::thread::sleep(Duration::from_secs(30));
+
+            let current_time = Utc::now().timestamp();
+            let elapsed_time = current_time - timestamp;
+
+            if elapsed_time >= 30 {
+            	timestamp = timestamp+30;
+                break;
+            }
+        } else if length >= 10 {
+            // Take the first 10 transactions from the mempool and mine a block
+            transactions = self.mempool.transactions.drain(..10).collect();
+            break;
+        } else {
+            return None;
+        }
+    }
+
+    let address = stakes.accounts.first().unwrap();
+    Some(self.create_block(timestamp, address, previous_hash, difficulty, transactions))
+}
+
+
+    /*pub fn mine_block_by_stake(&mut self) -> Option<Block> {
         if self.mempool.transactions.len() < 2 {
             return None;
         }
@@ -104,7 +142,7 @@ impl Blockchain {
         }
     
         None
-    }
+    }*/
 
     pub fn is_staking_valid(
         balance: u64,
@@ -123,8 +161,27 @@ impl Blockchain {
 
         decimal_staking_hash <= big_balance_diff
     }
+    pub fn create_block(
+    &mut self,
+    timestamp: i64,
+    address: &String,
+    previous_hash: String,
+    difficulty: u32,
+    transactions: Vec<Transaction>,
+) -> Block {
+    info!("Creating new block...");
 
-    pub fn create_block(&mut self, timestamp: i64,address: &String) -> Block {
+    Block::new(
+        self.chain.len(),
+        previous_hash,
+        timestamp,
+        transactions,
+        difficulty,
+        address.to_string(),
+    )
+}
+
+   /* pub fn create_block(&mut self, timestamp: i64,address: &String) -> Block {
         info!("Creating new block...");
 
         Block::new(
@@ -133,9 +190,9 @@ impl Blockchain {
             timestamp,
             self.mempool.transactions.clone(),
             self.get_difficulty(),
-            address.to_string(),
+            address,
         )
-    }
+    }*/
 
     pub fn is_valid_block(&mut self, block: Block) -> bool {
         let prev_block = self.chain.last().unwrap();
